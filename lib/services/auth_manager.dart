@@ -5,7 +5,6 @@ class AuthManager {
   static const String loginStatusKey = 'loginStatusKey';
   static const String loginTimeKey = 'loginTimeKey';
   static const String usernameKey = 'username';
-  static const String tokenKey = 'token';
 
   static Future<bool> isLoggedIn() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -22,7 +21,7 @@ class AuthManager {
         }
         return true;
       } catch (e) {
-        debugPrint('Error parsing DateTime: $e');
+        debugPrint('Error parsing DateTime: \$e');
         await logout();
         return false;
       }
@@ -30,12 +29,11 @@ class AuthManager {
     return false;
   }
 
-  static Future<void> login(String username, String token) async {
+  static Future<void> login(String username) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool(loginStatusKey, true);
     prefs.setString(loginTimeKey, DateTime.now().toString());
     prefs.setString(usernameKey, username);
-    prefs.setString(tokenKey, token);
   }
 
   static Future<void> logout() async {
@@ -46,10 +44,5 @@ class AuthManager {
   static Future<String?> getUsername() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString(usernameKey);
-  }
-
-  static Future<String?> getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString(tokenKey);
   }
 }

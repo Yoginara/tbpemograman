@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:dio_contact/view/screen/login_page.dart';
+import 'package:flutter/material.dart';
+import 'package:dio_contact/services/auth_manager.dart';
 
 class MyHome extends StatefulWidget {
   const MyHome({Key? key}) : super(key: key);
@@ -9,13 +10,47 @@ class MyHome extends StatefulWidget {
 }
 
 class _MyHomeState extends State<MyHome> {
+  String _username = "Guest";
+  List<Map<String, String>> _teamMembers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    String? username = await AuthManager.getUsername();
+    setState(() {
+      _username = username ?? "Guest";
+      _teamMembers = [
+        {
+          "name": "Yoginara Pratama Sitorus",
+          "npm": "714220043",
+          "role": "Front-end Developer",
+          "email": "yoginara2004@gmail.com",
+          "phone": "+62 813 6064 0668",
+          "imagePath": "assets/profile1.jpg"
+        },
+        {
+          "name": "Agung Deriko Nainggolan",
+          "npm": "714220039",
+          "role": "Back-end Developer",
+          "email": "agung12@gmail.com",
+          "phone": "+62 823-6071-1385",
+          "imagePath": "assets/profile2.jpg"
+        }
+      ];
+    });
+  }
+
   void _confirmLogout() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Konfirmasi Logout"),
-          content: const Text("Apakah Anda ingin logout?"),
+          content: const Text("Anda yakin ingin logout?"),
           actions: <Widget>[
             TextButton(
               onPressed: () {
@@ -37,10 +72,48 @@ class _MyHomeState extends State<MyHome> {
   }
 
   void _logout() {
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const LoginPage(),
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
+  Widget _buildTeamMemberTile({
+    required String name,
+    required String npm,
+    required String role,
+    required String email,
+    required String phone,
+    required String imagePath,
+  }) {
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: CircleAvatar(
+          radius: 30,
+          backgroundImage: AssetImage(imagePath),
+        ),
+        title: Text(
+          name,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple,
+          ),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Npm: $npm"),
+            Text("Role: $role"),
+            Text("Email: $email"),
+            Text("Phone: $phone"),
+          ],
+        ),
       ),
     );
   }
@@ -79,23 +152,23 @@ class _MyHomeState extends State<MyHome> {
                 bottomRight: Radius.circular(40),
               ),
             ),
-            child: const Column(
+            child: Column(
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 60,
                   backgroundImage: AssetImage('assets/logo.jpg'),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
-                  'Tim Kami',
-                  style: TextStyle(
-                    fontSize: 28,
+                  "Welcome, $_username",
+                  style: const TextStyle(
+                    fontSize: 24,
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 5),
-                Text(
+                const SizedBox(height: 10),
+                const Text(
                   'Bersama Mewujudkan Tujuan',
                   style: TextStyle(
                     fontSize: 16,
@@ -109,78 +182,19 @@ class _MyHomeState extends State<MyHome> {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              children: [
-                _buildTeamMemberTile(
-                  name: 'Yoginara Pratama Sitorus',
-                  role: 'Front-end Developer',
-                  email: 'yoginara2004@gmail.com',
-                  phone: '+62 813 6064 0668',
-                  imagePath: 'assets/profile1.jpg',
-                ),
-                const SizedBox(height: 20),
-                _buildTeamMemberTile(
-                  name: 'Agung Deriko Nainggolan',
-                  role: 'Back-end Developer',
-                  email: 'agung12@gmail.com',
-                  phone: '+62 823-6071-1385',
-                  imagePath: 'assets/profile2.jpg',
-                ),
-              ],
+              children: _teamMembers.map((member) {
+                return _buildTeamMemberTile(
+                  name: member["name"]!,
+                  npm: member["npm"]!,
+                  role: member["role"]!,
+                  email: member["email"]!,
+                  phone: member["phone"]!,
+                  imagePath: member["imagePath"]!,
+                );
+              }).toList(),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTeamMemberTile({
-    required String name,
-    required String role,
-    required String email,
-    required String phone,
-    required String imagePath,
-  }) {
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      shadowColor: Colors.black.withOpacity(0.2),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          radius: 40,
-          backgroundImage: AssetImage(imagePath),
-        ),
-        title: Text(
-          name,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.deepPurple,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Role: $role',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            Text(
-              'Email: $email',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            Text(
-              'Phone: $phone',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
-        ),
-        trailing: const Icon(
-          Icons.arrow_forward_ios,
-          color: Colors.deepPurple,
-        ),
       ),
     );
   }

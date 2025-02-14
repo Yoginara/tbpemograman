@@ -11,15 +11,23 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final ApiServices _apiServices = ApiServices();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isLoading = false;
 
   void _register() async {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password tidak cocok!')),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
-    bool success = await _apiServices.register(
+    bool success = await ApiServices().register(
       _usernameController.text,
       _passwordController.text,
     );
@@ -30,12 +38,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registrasi Berhasil! Silakan Login.")),
+        const SnackBar(content: Text('Registrasi berhasil! Silakan login.')),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registrasi Gagal. Coba lagi.")),
+        const SnackBar(content: Text('Registrasi gagal. Coba lagi.')),
       );
     }
   }
@@ -43,20 +51,24 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
+      appBar: AppBar(title: const Text('Registrasi')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             TextField(
               controller: _usernameController,
-              decoration: const InputDecoration(labelText: "Username"),
+              decoration: const InputDecoration(labelText: 'Username'),
             ),
-            const SizedBox(height: 10),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: "Password"),
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: _confirmPasswordController,
+              decoration:
+                  const InputDecoration(labelText: 'Konfirmasi Password'),
               obscureText: true,
             ),
             const SizedBox(height: 20),
@@ -64,7 +76,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: _register,
-                    child: const Text("Register"),
+                    child: const Text('Daftar'),
                   ),
           ],
         ),

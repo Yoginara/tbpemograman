@@ -39,15 +39,13 @@ class _FishListScreenState extends State<FishListScreen> {
   }
 
   void _showSnackbar(String message, {bool success = true}) {
-    Future.delayed(Duration.zero, () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        backgroundColor: success ? Colors.green : Colors.red,
+      ),
+    );
   }
 
   void _submitForm() async {
@@ -63,21 +61,44 @@ class _FishListScreenState extends State<FishListScreen> {
       try {
         if (selectedFish == null) {
           success = await apiServices.postFish(newFish);
-          _showSnackbar(
-              success ? "Data berhasil disimpan!" : "Gagal menyimpan data!",
-              success: success);
         } else {
           success = await apiServices.putFish(selectedFish!.id, newFish);
-          _showSnackbar(
-              success ? "Data berhasil diperbarui!" : "Gagal memperbarui data!",
-              success: success);
         }
 
-        if (success) _refreshFishList();
+        if (success) {
+          Navigator.pop(context); // **Tutup modal bottom sheet**
+          _refreshFishList();
+          _showSnackbar("Data berhasil disimpan!", success: true);
+        } else {
+          _showSnackbar("Gagal menyimpan data!", success: false);
+        }
       } catch (e) {
         _showSnackbar("Terjadi kesalahan!", success: false);
       }
     }
+  }
+
+  void _confirmDelete(String id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Konfirmasi"),
+        content: const Text("Anda yakin ingin menghapus?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteFish(id);
+            },
+            child: const Text("Hapus", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _deleteFish(String id) async {
@@ -92,11 +113,98 @@ class _FishListScreenState extends State<FishListScreen> {
     }
   }
 
+  void _showFishForm() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 20,
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Tambah / Edit Ikan",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildTextField(namaController, "Nama Ikan"),
+                  _buildTextField(jenisController, "Jenis Ikan"),
+                  _buildTextField(
+                    hargaController,
+                    "Harga Ikan",
+                    keyboardType: TextInputType.number,
+                    isNumeric: true,
+                  ),
+                  _buildTextField(kelaminController, "Jenis Kelamin"),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 20),
+                    ),
+                    child: Text(selectedFish == null
+                        ? "Tambah Ikan"
+                        : "Simpan Perubahan"),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label,
+      {TextInputType keyboardType = TextInputType.text,
+      bool isNumeric = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: Colors.grey[100],
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return "Masukkan $label";
+          }
+          if (isNumeric && !RegExp(r'^[0-9]+$').hasMatch(value)) {
+            return "Masukkan angka yang valid";
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Daftar Ikan"),
+        backgroundColor: Colors.deepPurple,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white),
@@ -104,112 +212,55 @@ class _FishListScreenState extends State<FishListScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: namaController,
-                    decoration: const InputDecoration(labelText: "Nama Ikan"),
-                    validator: (value) =>
-                        value!.isEmpty ? "Masukkan nama ikan" : null,
-                  ),
-                  TextFormField(
-                    controller: jenisController,
-                    decoration: const InputDecoration(labelText: "Jenis Ikan"),
-                    validator: (value) =>
-                        value!.isEmpty ? "Masukkan jenis ikan" : null,
-                  ),
-                  TextFormField(
-                    controller: hargaController,
-                    decoration: const InputDecoration(
-                      labelText: "Harga Ikan",
-                      prefixText: "Rp ",
+      body: FutureBuilder<Iterable<FishModel>?>(
+        future: fishListFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("Tidak ada data ikan"));
+          } else {
+            final fishList = snapshot.data!;
+            return ListView.builder(
+              padding: const EdgeInsets.all(10),
+              itemCount: fishList.length,
+              itemBuilder: (context, index) {
+                final fish = fishList.elementAt(index);
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  elevation: 3,
+                  child: ListTile(
+                    title: Text(fish.namaIkan,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                        "Jenis: ${fish.jenisIkan} | Harga: Rp${fish.hargaIkan}"),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _confirmDelete(fish.id),
                     ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Masukkan harga ikan";
-                      }
-                      if (double.tryParse(value) == null) {
-                        return "Harga harus berupa angka";
-                      }
-                      return null;
+                    onTap: () {
+                      setState(() {
+                        selectedFish = fish;
+                        namaController.text = fish.namaIkan;
+                        jenisController.text = fish.jenisIkan;
+                        hargaController.text = fish.hargaIkan;
+                        kelaminController.text = fish.jenisKelamin;
+                      });
+                      _showFishForm();
                     },
                   ),
-                  TextFormField(
-                    controller: kelaminController,
-                    decoration:
-                        const InputDecoration(labelText: "Jenis Kelamin"),
-                    validator: (value) =>
-                        value!.isEmpty ? "Masukkan jenis kelamin" : null,
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: _submitForm,
-                    child: Text(selectedFish == null
-                        ? "Tambah Ikan"
-                        : "Simpan Perubahan"),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder<Iterable<FishModel>?>(
-              future: fishListFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("Tidak ada data ikan"));
-                } else {
-                  final fishList = snapshot.data!;
-                  return ListView.builder(
-                    itemCount: fishList.length,
-                    itemBuilder: (context, index) {
-                      final fish = fishList.elementAt(index);
-                      return Card(
-                        child: ListTile(
-                          title: Text(fish.namaIkan),
-                          subtitle: Text(
-                              "Jenis: ${fish.jenisIkan} | Harga: ${fish.hargaIkan}"),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () {
-                                  setState(() {
-                                    selectedFish = fish;
-                                    namaController.text = fish.namaIkan;
-                                    jenisController.text = fish.jenisIkan;
-                                    hargaController.text = fish.hargaIkan;
-                                    kelaminController.text = fish.jenisKelamin;
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                icon:
-                                    const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _deleteFish(fish.id),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                }
+                );
               },
-            ),
-          ),
-        ],
+            );
+          }
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.deepPurple,
+        onPressed: _showFishForm,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

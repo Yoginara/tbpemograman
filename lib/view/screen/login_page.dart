@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage> {
       var response = await _apiServices.login(username, password);
       if (response) {
         await AuthManager.login(
-            username, 'dummy_token'); // Ganti dengan token dari API
+            username); // Ganti dengan token dari API
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(

@@ -1,5 +1,6 @@
 import 'package:dio_contact/view/screen/home.dart';
 import 'package:dio_contact/view/screen/list_betta.dart';
+import 'package:dio_contact/view/screen/about.dart';
 import 'package:flutter/material.dart';
 
 class DynamicBottomNavbar extends StatefulWidget {
@@ -15,6 +16,7 @@ class _DynamicBottomNavbarState extends State<DynamicBottomNavbar> {
   final List<Widget> _pages = <Widget>[
     const MyHome(),
     const FishListScreen(),
+    const AboutUsPage(),
   ];
 
   void onTabTapped(int index) {
@@ -42,6 +44,10 @@ class _DynamicBottomNavbarState extends State<DynamicBottomNavbar> {
           BottomNavigationBarItem(
             icon: Icon(Icons.storage),
             label: 'List Fish',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.info),
+            label: 'About',
           ),
         ],
         backgroundColor: Colors.deepPurple,
