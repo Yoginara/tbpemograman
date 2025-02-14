@@ -16,12 +16,15 @@ class LoginInput {
 class LoginResponse {
   final String message;
   final int status;
+  final String token; // Tambahkan token
   LoginResponse({
     required this.message,
     required this.status,
+    required this.token, // Tambahkan token
   });
   factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
         message: json["message"],
         status: json["status"],
+        token: json["token"], // Ambil token dari JSON response
       );
 }

@@ -5,6 +5,7 @@ class AuthManager {
   static const String loginStatusKey = 'loginStatusKey';
   static const String loginTimeKey = 'loginTimeKey';
   static const String usernameKey = 'username';
+  static const String tokenKey = 'token';
 
   static Future<bool> isLoggedIn() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -14,7 +15,6 @@ class AuthManager {
       try {
         DateTime loginTime = DateTime.parse(loginTimeString);
         final Duration timeDifference = DateTime.now().difference(loginTime);
-        // Set maximum durasi untuk validasi login di bawah ini
         const Duration maxDuration = Duration(hours: 4);
         if (timeDifference > maxDuration) {
           await logout();
@@ -30,17 +30,26 @@ class AuthManager {
     return false;
   }
 
-  static Future<void> login(String username) async {
+  static Future<void> login(String username, String token) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setBool(loginStatusKey, true);
     prefs.setString(loginTimeKey, DateTime.now().toString());
     prefs.setString(usernameKey, username);
+    prefs.setString(tokenKey, token);
   }
 
   static Future<void> logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.remove(loginStatusKey);
-    prefs.remove(loginTimeKey);
-    prefs.remove(usernameKey);
+    await prefs.clear(); // Hapus semua data login
+  }
+
+  static Future<String?> getUsername() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(usernameKey);
+  }
+
+  static Future<String?> getToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(tokenKey);
   }
 }

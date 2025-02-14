@@ -1,11 +1,9 @@
 import 'package:dio_contact/view/screen/home.dart';
-import 'package:dio_contact/view/screen/home_page.dart';
-import 'package:dio_contact/view/screen/add_fish.dart';
 import 'package:dio_contact/view/screen/list_betta.dart';
 import 'package:flutter/material.dart';
 
 class DynamicBottomNavbar extends StatefulWidget {
-  const DynamicBottomNavbar({Key? key}) : super(key: key);
+  const DynamicBottomNavbar({super.key});
 
   @override
   State<DynamicBottomNavbar> createState() => _DynamicBottomNavbarState();
@@ -16,8 +14,7 @@ class _DynamicBottomNavbarState extends State<DynamicBottomNavbar> {
 
   final List<Widget> _pages = <Widget>[
     const MyHome(),
-    const FishFormScreen(),
-    FishListScreen(),
+    const FishListScreen(),
   ];
 
   void onTabTapped(int index) {
@@ -41,10 +38,6 @@ class _DynamicBottomNavbarState extends State<DynamicBottomNavbar> {
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.edit),
-            label: 'Input Fish',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.storage),

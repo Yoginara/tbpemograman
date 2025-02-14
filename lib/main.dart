@@ -1,5 +1,4 @@
 import 'package:dio_contact/view/screen/login_page.dart';
-import 'package:dio_contact/view/bottom_navbar.dart';
 import 'package:flutter/material.dart';
 
 void main() {

@@ -1,11 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:dio_contact/model/fish_model.dart';
-import 'package:dio_contact/model/login_model.dart';
 import 'package:flutter/material.dart';
+import 'package:dio_contact/model/fish_model.dart';
 
 class ApiServices {
   final Dio dio = Dio();
   final String _baseUrl = 'https://ass-be-7839a19b4578.herokuapp.com/api';
+
   Future<Iterable<FishModel>?> getAllFish() async {
     try {
       var response = await dio.get('$_baseUrl/betta');
@@ -16,14 +16,9 @@ class ApiServices {
         return fishList;
       }
       return null;
-    } on DioException catch (e) {
-      if (e.response != null && e.response!.statusCode != 200) {
-        debugPrint('Client error - the request cannot be fulfilled');
-        return null;
-      }
-      rethrow;
     } catch (e) {
-      rethrow;
+      debugPrint('Error saat mengambil data ikan: $e');
+      return null;
     }
   }
 
@@ -31,60 +26,42 @@ class ApiServices {
     try {
       var response = await dio.get('$_baseUrl/betta/$id');
       if (response.statusCode == 200) {
-        final data = response.data;
-        return FishModel.fromJson(data);
+        return FishModel.fromJson(response.data);
       }
       return null;
-    } on DioException catch (e) {
-      if (e.response != null && e.response!.statusCode != 200) {
-        debugPrint('Client error - the request cannot be fulfilled');
-        return null;
-      }
-      rethrow;
     } catch (e) {
-      rethrow;
+      debugPrint('Error saat mengambil detail ikan: $e');
+      return null;
     }
   }
 
-  Future<FishResponse?> postFish(FishInput ct) async {
+  Future<bool> postFish(FishInput ct) async {
     try {
-      final response = await dio.post(
-        '$_baseUrl/betta',
-        data: ct.toJson(),
-      );
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        return FishResponse.fromJson(response.data);
-      }
-      return null;
+      final response = await dio.post('$_baseUrl/betta', data: ct.toJson());
+      return response.statusCode == 201 || response.statusCode == 200;
     } catch (e) {
-      rethrow;
+      debugPrint('Error saat menambahkan data: $e');
+      return false;
     }
   }
 
-  Future<FishResponse?> putFish(String id, FishInput ct) async {
+  Future<bool> putFish(String id, FishInput ct) async {
     try {
-      final response = await Dio().put(
-        '$_baseUrl/betta/$id',
-        data: ct.toJson(),
-      );
-      if (response.statusCode == 200) {
-        return FishResponse.fromJson(response.data);
-      }
-      return null;
+      final response = await dio.put('$_baseUrl/betta/$id', data: ct.toJson());
+      return response.statusCode == 200;
     } catch (e) {
-      rethrow;
+      debugPrint('Error saat memperbarui data: $e');
+      return false;
     }
   }
 
-  Future deleteFish(String id) async {
+  Future<bool> deleteFish(String id) async {
     try {
-      final response = await Dio().delete('$_baseUrl/betta/$id');
-      if (response.statusCode == 200) {
-        return FishResponse.fromJson(response.data);
-      }
-      return null;
+      final response = await dio.delete('$_baseUrl/betta/$id');
+      return response.statusCode == 200;
     } catch (e) {
-      rethrow;
+      debugPrint('Error saat menghapus data: $e');
+      return false;
     }
   }
 

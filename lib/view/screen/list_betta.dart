@@ -3,216 +3,213 @@ import 'package:dio_contact/model/fish_model.dart';
 import 'package:dio_contact/services/api_services.dart';
 
 class FishListScreen extends StatefulWidget {
+  const FishListScreen({super.key});
+
   @override
   _FishListScreenState createState() => _FishListScreenState();
 }
 
 class _FishListScreenState extends State<FishListScreen> {
   final ApiServices apiServices = ApiServices();
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController namaController = TextEditingController();
+  final TextEditingController jenisController = TextEditingController();
+  final TextEditingController hargaController = TextEditingController();
+  final TextEditingController kelaminController = TextEditingController();
 
   FishModel? selectedFish;
-  final _formKey = GlobalKey<FormState>();
-  final TextEditingController _namaController = TextEditingController();
-  final TextEditingController _jenisController = TextEditingController();
-  final TextEditingController _hargaController = TextEditingController();
-  final TextEditingController _kelaminController = TextEditingController();
+  late Future<Iterable<FishModel>?> fishListFuture;
 
-  void _startEdit(FishModel fish) {
+  @override
+  void initState() {
+    super.initState();
+    fishListFuture = apiServices.getAllFish();
+  }
+
+  void _refreshFishList() {
     setState(() {
-      selectedFish = fish;
-      _namaController.text = fish.namaIkan;
-      _jenisController.text = fish.jenisIkan;
-      _hargaController.text = fish.hargaIkan.toString();
-      _kelaminController.text = fish.jenisKelamin;
+      fishListFuture = apiServices.getAllFish();
+      namaController.clear();
+      jenisController.clear();
+      hargaController.clear();
+      kelaminController.clear();
+      selectedFish = null;
     });
   }
 
-  void _saveEdit() async {
+  void _showSnackbar(String message, {bool success = true}) {
+    Future.delayed(Duration.zero, () {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
+    });
+  }
+
+  void _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      final updatedFish = FishInput(
-        namaIkan: _namaController.text,
-        jenisIkan: _jenisController.text,
-        hargaIkan: _hargaController.text,
-        jenisKelamin: _kelaminController.text,
+      FishInput newFish = FishInput(
+        namaIkan: namaController.text,
+        jenisIkan: jenisController.text,
+        hargaIkan: hargaController.text,
+        jenisKelamin: kelaminController.text,
       );
 
-      await apiServices.putFish(selectedFish!.id, updatedFish);
-      _refreshData();
+      bool success;
+      try {
+        if (selectedFish == null) {
+          success = await apiServices.postFish(newFish);
+          _showSnackbar(
+              success ? "Data berhasil disimpan!" : "Gagal menyimpan data!",
+              success: success);
+        } else {
+          success = await apiServices.putFish(selectedFish!.id, newFish);
+          _showSnackbar(
+              success ? "Data berhasil diperbarui!" : "Gagal memperbarui data!",
+              success: success);
+        }
+
+        if (success) _refreshFishList();
+      } catch (e) {
+        _showSnackbar("Terjadi kesalahan!", success: false);
+      }
     }
   }
 
   void _deleteFish(String id) async {
-    bool confirmDelete = await _showDeleteDialog();
-    if (confirmDelete) {
-      await apiServices.deleteFish(id);
-      _refreshData();
+    try {
+      bool success = await apiServices.deleteFish(id);
+      _showSnackbar(
+          success ? "Data berhasil dihapus!" : "Gagal menghapus data!",
+          success: success);
+      if (success) _refreshFishList();
+    } catch (e) {
+      _showSnackbar("Terjadi kesalahan!", success: false);
     }
-  }
-
-  void _refreshData() {
-    setState(() {
-      selectedFish = null; // Menyembunyikan form edit saat refresh
-    });
-  }
-
-  Future<bool> _showDeleteDialog() async {
-    return await showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Hapus Ikan'),
-            content: const Text('Apakah Anda yakin ingin menghapus ikan ini?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Batal'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
-        ) ??
-        false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Daftar Ikan Betta'),
-        backgroundColor: Colors.blueAccent,
+        title: const Text("Daftar Ikan"),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _refreshData,
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshFishList,
           ),
         ],
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: namaController,
+                    decoration: const InputDecoration(labelText: "Nama Ikan"),
+                    validator: (value) =>
+                        value!.isEmpty ? "Masukkan nama ikan" : null,
+                  ),
+                  TextFormField(
+                    controller: jenisController,
+                    decoration: const InputDecoration(labelText: "Jenis Ikan"),
+                    validator: (value) =>
+                        value!.isEmpty ? "Masukkan jenis ikan" : null,
+                  ),
+                  TextFormField(
+                    controller: hargaController,
+                    decoration: const InputDecoration(
+                      labelText: "Harga Ikan",
+                      prefixText: "Rp ",
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Masukkan harga ikan";
+                      }
+                      if (double.tryParse(value) == null) {
+                        return "Harga harus berupa angka";
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: kelaminController,
+                    decoration:
+                        const InputDecoration(labelText: "Jenis Kelamin"),
+                    validator: (value) =>
+                        value!.isEmpty ? "Masukkan jenis kelamin" : null,
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    child: Text(selectedFish == null
+                        ? "Tambah Ikan"
+                        : "Simpan Perubahan"),
+                  ),
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: FutureBuilder<Iterable<FishModel>?>(
-              future: apiServices.getAllFish(),
+              future: fishListFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return const Center(child: Text('Terjadi kesalahan'));
                 } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: const Text('Tidak ada data ikan'));
+                  return const Center(child: Text("Tidak ada data ikan"));
+                } else {
+                  final fishList = snapshot.data!;
+                  return ListView.builder(
+                    itemCount: fishList.length,
+                    itemBuilder: (context, index) {
+                      final fish = fishList.elementAt(index);
+                      return Card(
+                        child: ListTile(
+                          title: Text(fish.namaIkan),
+                          subtitle: Text(
+                              "Jenis: ${fish.jenisIkan} | Harga: ${fish.hargaIkan}"),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  setState(() {
+                                    selectedFish = fish;
+                                    namaController.text = fish.namaIkan;
+                                    jenisController.text = fish.jenisIkan;
+                                    hargaController.text = fish.hargaIkan;
+                                    kelaminController.text = fish.jenisKelamin;
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () => _deleteFish(fish.id),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
                 }
-
-                final fishList = snapshot.data!;
-
-                return ListView.builder(
-                  itemCount: fishList.length,
-                  itemBuilder: (context, index) {
-                    final fish = fishList.elementAt(index);
-                    return Card(
-                      margin: const EdgeInsets.all(8.0),
-                      child: ListTile(
-                        leading: const Icon(Icons.storage,
-                            color: Colors.blueAccent, size: 40),
-                        title: Text(fish.namaIkan,
-                            style: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Jenis: ${fish.jenisIkan}'),
-                            Text('Harga: Rp${fish.hargaIkan}'),
-                            Text('Kelamin: ${fish.jenisKelamin}'),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.green), 
-                              onPressed: () => _startEdit(fish),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteFish(fish.id),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
               },
             ),
           ),
-          if (selectedFish != null) _buildEditForm(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEditForm() {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Card(
-        elevation: 4,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Edit Ikan",
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                TextFormField(
-                  controller: _namaController,
-                  decoration: const InputDecoration(labelText: 'Nama Ikan'),
-                  validator: (value) =>
-                      value!.isEmpty ? 'Nama tidak boleh kosong' : null,
-                ),
-                TextFormField(
-                  controller: _jenisController,
-                  decoration: const InputDecoration(labelText: 'Jenis Ikan'),
-                  validator: (value) =>
-                      value!.isEmpty ? 'Jenis tidak boleh kosong' : null,
-                ),
-                TextFormField(
-                  controller: _hargaController,
-                  decoration: const InputDecoration(labelText: 'Harga Ikan'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value!.isEmpty ? 'Harga tidak boleh kosong' : null,
-                ),
-                TextFormField(
-                  controller: _kelaminController,
-                  decoration: const InputDecoration(labelText: 'Kelamin Ikan'),
-                  validator: (value) =>
-                      value!.isEmpty ? 'Kelamin tidak boleh kosong' : null,
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedFish = null;
-                        });
-                      },
-                      child: const Text('Batal'),
-                    ),
-                    ElevatedButton(
-                      onPressed: _saveEdit,
-                      child: const Text('Simpan'),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
